@@ -137,7 +137,7 @@ export function updateVideo(db: Database, video: Video): void {
     video.thumbnailURL ?? null,
     video.videoURL ?? null,
     video.userID,
-    video.id,
+    video.id
   ]);
 }
 
