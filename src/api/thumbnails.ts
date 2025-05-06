@@ -43,7 +43,7 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     throw new UserForbiddenError("User is not owner of the video");
   }
 
-  const filePath = await writeFileToAssets(cfg, thumbnail, videoId);
+  const filePath = await writeFileToAssets(cfg, thumbnail);
   if (filePath === null) {
     throw new FileError("Failed writing file, try again");
   }
