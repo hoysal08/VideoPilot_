@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import type { ApiConfig } from "../config";
 import type { FileAsset, Thumbnail } from "../types";
 import path from "path";
+import { FileError } from '../api/errors';
 
 export function getBase64Encoded(thumbnail: Thumbnail): string {
   const encodedImage64 = Buffer.from(thumbnail.data).toBase64();
@@ -50,4 +51,13 @@ export async function writeAssetToS3(
     console.log("Error uploading to S3:", err);
     return false;
   }
+}
+
+export async function deleteAssets(filePath:string): Promise<boolean> {
+  const file =  Bun.file(filePath);
+  if(!file.exists) {
+    throw new FileError(`#deleteAssets, Failed delete file for ${filePath}`)
+  }
+  file.delete()
+  return true;
 }

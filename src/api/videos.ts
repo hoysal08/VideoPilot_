@@ -6,7 +6,7 @@ import { getBearerToken, validateJWT } from "../auth";
 import { BadRequestError, FileError, UserForbiddenError } from "./errors";
 import { getVideo, updateVideo } from "../db/videos";
 import type { FileAsset } from "../types";
-import { getVideoS3URL, writeAssetToS3, writeFileToAssets } from "../utils";
+import { deleteAssets, getVideoS3URL, writeAssetToS3, writeFileToAssets } from "../utils";
 import path from "path";
 
 const MAX_UPLOAD_SIZE_VIDEO = 1 << 30;
@@ -52,6 +52,6 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
     const s3Url = getVideoS3URL(cfg, fileName)
     video.videoURL = s3Url;
     updateVideo(cfg.db, video)
-
+    deleteAssets(`${cfg.assetsRoot}/${fileName}`)
     return respondWithJSON(200, video);
 }
