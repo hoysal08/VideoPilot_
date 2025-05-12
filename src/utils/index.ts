@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import type { ApiConfig } from "../config";
-import type { Thumbnail } from "../types";
+import type { FileAsset, Thumbnail } from "../types";
 import path from "path";
 
 export function getBase64Encoded(thumbnail: Thumbnail): string {
@@ -8,18 +8,46 @@ export function getBase64Encoded(thumbnail: Thumbnail): string {
   return `data:${thumbnail.mediaType};base64,${encodedImage64}`;
 }
 
+export function getVideoS3URL(cfg: ApiConfig, videoFileName: string): string{
+  return `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${videoFileName}`
+}
+
 export async function writeFileToAssets(
   cfg: ApiConfig,
-  thumbnail: Thumbnail
+  file: FileAsset
 ): Promise<string | null> {
-  const fileExtension = "." + thumbnail.mediaType.split("/").at(1);
-  const randomId = randomBytes(64).toString("base64url")
+  const fileExtension = "." + file.mediaType.split("/").at(1);
+  const randomId = randomBytes(64).toString("base64url");
   const filePath = path.join(cfg.assetsRoot, `${randomId}${fileExtension}`);
   try {
-    await Bun.write(filePath, thumbnail.data);
+    await Bun.write(filePath, file.data);
     return filePath;
   } catch (err) {
     console.log(err);
     return null;
+  }
+}
+
+export async function writeAssetToS3(
+  cfg: ApiConfig,
+  filePath: string,
+  s3Path: string,
+  mimeType: string
+): Promise<boolean> {
+  try {
+    s3Path = s3Path.replace(/^\/+/, '');
+    const fileData = await Bun.file(filePath).arrayBuffer();
+    const s3File = cfg.s3Client.file(s3Path)
+    const response = await s3File.write(fileData, {
+      type: mimeType,
+      
+    })
+    if(response != 0){
+      return true
+    }
+    return false
+  } catch (err) {
+    console.log("Error uploading to S3:", err);
+    return false;
   }
 }

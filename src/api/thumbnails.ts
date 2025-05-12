@@ -4,10 +4,10 @@ import { getVideo, updateVideo } from "../db/videos";
 import type { ApiConfig } from "../config";
 import type { BunRequest } from "bun";
 import { BadRequestError, FileError, UserForbiddenError } from "./errors";
-import type { Thumbnail } from "../types";
+import type { FileAsset } from "../types";
 import { writeFileToAssets } from "../utils";
 
-const MAX_UPLOAD_SIZE = 10 << 20; // 10 * 1024 * 1024
+const MAX_UPLOAD_SIZE_THUMBNAIL = 10 << 20; // 10 * 1024 * 1024
 const ALLOWED_THUMBNAIL_TYPES = ["image/jpeg", "image/png"];
 
 export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
@@ -26,14 +26,14 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
   if (!(formData instanceof File)) {
     throw new BadRequestError("Invalid file in form data");
   }
-  if (formData.size > MAX_UPLOAD_SIZE) {
-    throw new BadRequestError(`File size exceeds: ${MAX_UPLOAD_SIZE} bytes`);
+  if (formData.size > MAX_UPLOAD_SIZE_THUMBNAIL) {
+    throw new BadRequestError(`File size exceeds: ${MAX_UPLOAD_SIZE_THUMBNAIL} bytes`);
   }
   if (!ALLOWED_THUMBNAIL_TYPES.includes(formData.type)) {
     throw new BadRequestError(`File type is Invalid`);
   }
 
-  const thumbnail: Thumbnail = {
+  const thumbnail: FileAsset = {
     data: await formData.arrayBuffer(),
     mediaType: formData.type,
   };
