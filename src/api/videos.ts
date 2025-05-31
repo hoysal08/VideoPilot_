@@ -8,7 +8,7 @@ import { getVideo, updateVideo } from "../db/videos";
 import type { FileAsset } from "../types";
 import { deleteAssets, getVideoS3URL, writeAssetToS3, writeFileToAssets } from "../utils";
 import path from "path";
-import { getVideoAspectRatio } from "./helper/fileHelper";
+import { getVideoAspectRatio, processVideoForFastStart } from "./helper/fileHelper";
 
 const MAX_UPLOAD_SIZE_VIDEO = 1 << 30;
 const ALLOWED_VIDEO_TYPES = ["video/mp4"];
@@ -48,13 +48,19 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
     const fileName = path.basename(filePath)
     const aspectRatio = await getVideoAspectRatio(filePath)
     const s3FileName = aspectRatio + '-' + fileName
-    const s3Response = await writeAssetToS3(cfg, filePath, s3FileName, videoAsset.mediaType)
-    if(!s3Response) {
+    const processedFilePath = await processVideoForFastStart(filePath)
+    if( !processedFilePath){
+      throw new FileError("Failed to update faststart")
+    }
+    const processedFileName = path.basename(processedFilePath)
+    const s3Response = await writeAssetToS3(cfg, processedFilePath, s3FileName, videoAsset.mediaType)
+    if (!s3Response) {
       throw new FileError("Failed writing to s3, try again")
     }
     const s3Url = getVideoS3URL(cfg, s3FileName)
     video.videoURL = s3Url;
     updateVideo(cfg.db, video)
     deleteAssets(`${cfg.assetsRoot}/${fileName}`)
+    deleteAssets(`${cfg.assetsRoot}/${processedFileName}`)
     return respondWithJSON(200, video);
 }
