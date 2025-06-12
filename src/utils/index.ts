@@ -3,6 +3,7 @@ import type { ApiConfig } from "../config";
 import type { FileAsset, Thumbnail } from "../types";
 import path from "path";
 import { FileError } from '../api/errors';
+import type { Video } from '../db/videos';
 
 export function getBase64Encoded(thumbnail: Thumbnail): string {
   const encodedImage64 = Buffer.from(thumbnail.data).toBase64();
@@ -60,4 +61,22 @@ export async function deleteAssets(filePath:string): Promise<boolean> {
   }
   file.delete()
   return true;
+}
+
+
+export function generatePresignedURL(cfg: ApiConfig, key: string, expireTime?: number) {
+  const defaultExpiry = 24 * 60 * 60; // 24 hours in seconds
+  const expiresIn = expireTime ?? defaultExpiry;
+
+  return cfg.s3Client.presign(key, { expiresIn });
+}
+
+
+export function dbVideoToSignedVideo(cfg: ApiConfig, video: Video): Video{
+  if(!video.videoURL){
+    return video
+  }
+  const presignedURL = generatePresignedURL(cfg, video.videoURL, undefined)
+  video.videoURL = presignedURL
+  return video
 }

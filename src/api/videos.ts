@@ -4,9 +4,9 @@ import { type ApiConfig } from "../config";
 import type { BunRequest } from "bun";
 import { getBearerToken, validateJWT } from "../auth";
 import { BadRequestError, FileError, UserForbiddenError } from "./errors";
-import { getVideo, updateVideo } from "../db/videos";
+import { getVideo, updateVideo, type Video } from "../db/videos";
 import type { FileAsset } from "../types";
-import { deleteAssets, getVideoS3URL, writeAssetToS3, writeFileToAssets } from "../utils";
+import { dbVideoToSignedVideo, deleteAssets, generatePresignedURL, getVideoS3URL, writeAssetToS3, writeFileToAssets } from "../utils";
 import path from "path";
 import { getVideoAspectRatio, processVideoForFastStart } from "./helper/fileHelper";
 
@@ -57,10 +57,10 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
     if (!s3Response) {
       throw new FileError("Failed writing to s3, try again")
     }
-    const s3Url = getVideoS3URL(cfg, s3FileName)
-    video.videoURL = s3Url;
+    // const s3Url = getVideoS3URL(cfg, s3FileName)
+    video.videoURL = s3FileName;
     updateVideo(cfg.db, video)
     deleteAssets(`${cfg.assetsRoot}/${fileName}`)
     deleteAssets(`${cfg.assetsRoot}/${processedFileName}`)
-    return respondWithJSON(200, video);
+    return respondWithJSON(200, dbVideoToSignedVideo(cfg, video));
 }
