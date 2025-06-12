@@ -14,6 +14,10 @@ export function getVideoS3URL(cfg: ApiConfig, videoFileName: string): string{
   return `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${videoFileName}`
 }
 
+export function getEdgeUrl(cfg: ApiConfig, videoFileName: string): string{
+  return `https://${cfg.s3CfDistribution}/${videoFileName}`
+}
+
 export async function writeFileToAssets(
   cfg: ApiConfig,
   file: FileAsset
@@ -64,19 +68,3 @@ export async function deleteAssets(filePath:string): Promise<boolean> {
 }
 
 
-export function generatePresignedURL(cfg: ApiConfig, key: string, expireTime?: number) {
-  const defaultExpiry = 24 * 60 * 60; // 24 hours in seconds
-  const expiresIn = expireTime ?? defaultExpiry;
-
-  return cfg.s3Client.presign(key, { expiresIn });
-}
-
-
-export function dbVideoToSignedVideo(cfg: ApiConfig, video: Video): Video{
-  if(!video.videoURL){
-    return video
-  }
-  const presignedURL = generatePresignedURL(cfg, video.videoURL, undefined)
-  video.videoURL = presignedURL
-  return video
-}
